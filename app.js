@@ -11,14 +11,32 @@ const TOURS_PATH = DATA_DIR + 'tours.json';
 const tours = JSON.parse(fs.readFileSync(TOURS_PATH));
 
 app.get('/api/v1/tours', (req, res) => {
-    res.sendStatus(200).json({
-        status: 'success',
+    res.status(200).json({ 
+        status: 'success', 
         results: tours.length,
         data:{
-            tours
-        }
-    })
+            tours 
+        } 
+    }) 
 })
+
+app.get('/api/v1/tours/:id', (req, res) => {
+    const {id} = req.params;
+    const tour = tours.find(item => item._id === id);
+    if(!tour) {
+        return res.status(400).json({
+            status: 'fail',
+            message: 'Invalid ID'
+        })
+    }
+    res.status(200).json({ 
+        status: 'success', 
+        data:{
+            tour
+        } 
+    }) 
+})
+
 
 app.post('/api/v1/tours', (req, res) => {
     const newId = tours[tours.length -1]._id + 1;
