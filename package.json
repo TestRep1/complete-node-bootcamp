@@ -4,7 +4,8 @@
   "description": "This repo contains starter files and the finished project files for all the projects contained in the course (complete repo size is **288MB**).",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon --exec npm start",
+    "start": "node app.js"
   },
   "repository": {
     "type": "git",
@@ -18,6 +19,7 @@
   },
   "homepage": "https://github.com/TestRep1/complete-node-bootcamp#readme",
   "dependencies": {
-    "express": "^4.17.1"
+    "express": "^4.17.1",
+    "nodemon": "^2.0.7"
   }
 }
