@@ -1,3 +1,4 @@
+const { mongo, Mongoose } = require('mongoose');
 const Tour = require('../models/tourModel');
 
 // const fs = require('fs');
@@ -27,6 +28,74 @@ const Tour = require('../models/tourModel');
 //   }
 //   next();
 // };
+
+exports.getToursPlanOfYear = async (req, res) => {
+  const year = req.params.year;
+  const plan = await Tour.aggregate([
+    {
+      $unwind: '$startDates'
+    },
+    {
+      $match: {
+        startDates: {$gte: new Date(year, 0, 1)},
+        startDates: {$lte: new Date(year, 11, 31)}
+      }
+    },
+    {
+      $group:{
+        _id: {$month: '$startDates'},
+        totalTours: {$sum: 1},
+        tours: {$push: '$name'}
+      }
+    },
+    {
+      $addFields: {month: '$_id'}
+    },
+    {
+      //remove fields
+      $project: {_id: 0}
+    }
+  ])
+
+  res.status(200).json({
+    status: 'success',
+    requestedAt: req.requestTime,
+    data: {
+      plan
+    }
+  });
+}
+
+exports.getTourStats = async (req, res) => {
+  const stat = await Tour.aggregate([
+    { $match: { ratingsAverage: { $gte: 4 } } },
+    {
+      $group: {
+        _id: {$toUpper: '$difficulty'},//'$difficulty', //null,
+        totalPrice: { $sum: '$price' },
+        totalTours: { $sum: 1 },
+        avgRatings: { $avg: '$ratingsAverage' },
+        minPrice: { $min: '$price' },
+        maxPrice: { $max: '$price' }
+      }
+    },
+    {
+      $sort: {totalPrice: -1}//{_id: -1}
+    },
+    // {
+    //   //We can add another Match to filter the result
+    //   $match: {_id: {$ne: 'EASY'}}
+    // }
+  ]);
+
+  res.status(200).json({
+    status: 'success',
+    requestedAt: req.requestTime,
+    data: {
+      stat
+    }
+  });
+};
 
 exports.aliasTopCheapTours = (req, res, next) => {
   req.query = {

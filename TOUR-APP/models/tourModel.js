@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
+const slugify = require('slugify');
 
-const TourSchema = new mongoose.Schema( {
+const TourSchema = new mongoose.Schema(
+  {
     name: {
       type: String,
       required: [true, 'A tour must have a name'],
@@ -82,5 +84,23 @@ const TourSchema = new mongoose.Schema( {
   }
 );
 
+TourSchema.virtual('duerationWeeks').get(function() {
+  return this.duration / 7;
+});
+
+TourSchema.pre('save', function(next) {
+  this.slug = slugify(this.name, { lower: true });
+  next();
+});
+
+TourSchema.post('save', function(doc, next) {
+  console.log('Documnet was saved in DB...');
+  next();
+});
+
+TourSchema.pre('aggregate', function(next) {
+  this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
+  next();
+});
 
 module.exports = mongoose.model('Tour', TourSchema);
