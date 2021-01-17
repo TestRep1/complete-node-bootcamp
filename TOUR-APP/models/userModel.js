@@ -19,7 +19,8 @@ const userSchema = new mongoose.Schema({
   password: {
       type: String,
       required: [true, 'Password is required!'],
-      minlength: 8
+      minlength: 8,
+      select: false
   },
   confirmPassword: {
       type: String,
@@ -30,7 +31,16 @@ const userSchema = new mongoose.Schema({
           },
           message: 'Password doesn\'t match'
       }
-  }
+  },
+  passwordChangedAt: Date,
+
+  role: {
+    type: String,
+    enum: ['user', 'guide', 'lead-guide', 'admin'],
+    default: 'user'
+  },
+
+  
 });
 
 userSchema.pre('save', async function(next) {
@@ -40,5 +50,18 @@ userSchema.pre('save', async function(next) {
     this.confirmPassword = undefined;
     next();
 })
+
+//CHECK PASSWORD
+userSchema.methods.isPasswordCorrect = async function(password, userPassword) {
+  return await bcrypt.compare(password, userPassword);
+}
+
+//VHECK IF PASSWORD WAS CHANGED AFTER LOGIN
+userSchema.methods.changedPasswordAfter = function(jwtTimestamp) {
+  if(this.passwordChangedAt) {
+    return jwtTimestamp < parseInt(this.passwordChangedAt.getTime() / 1000, 10);
+  }
+  return false;
+}
 
 module.exports = mongoose.model('User', userSchema);
