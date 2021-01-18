@@ -5,9 +5,9 @@ const crypto = require('crypto');
 
 const userSchema = new mongoose.Schema({
   active: {
-      type: Boolean,
-      default: true,
-      select: false
+    type: Boolean,
+    default: true,
+    select: false
   },
   name: {
     type: String,
@@ -95,7 +95,7 @@ userSchema.pre('save', function(next) {
 });
 
 userSchema.pre(/^find/, function(next) {
-  this.find({ active: {$ne: false} });
+  this.find({ active: { $ne: false } });
   next();
 });
 

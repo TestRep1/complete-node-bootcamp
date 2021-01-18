@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const Tour = require('./models/tourModel');
 dotenv.config({ path: './config.env' });
 
-const DATA_PATH = `${__dirname}/dev-data/data/tours-simple.json`;
+const DATA_PATH = `${__dirname}/dev-data/data/tours.json`;
 
 mongoose
   .connect(process.env.DB_URL.replace('<PASSWORD>', process.env.DB_PASS), {

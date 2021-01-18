@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
+const User = require('./userModel');
 
 const TourSchema = new mongoose.Schema(
   {
@@ -76,13 +77,60 @@ const TourSchema = new mongoose.Schema(
     secretTour: {
       type: Boolean,
       default: false
-    }
+    },
+
+    //LOCATIONS:
+    startLocation: {
+      type: {
+        type: String,
+        default: 'Point',
+        enum: ['Point']
+      },
+      coordinates: [Number],
+      address: String,
+      description: String
+    },
+    locations: [
+      {
+        type: {
+          type: String,
+          default: 'Point',
+          enum: ['Point']
+        },
+        coordinates: [Number],
+        address: String,
+        description: String,
+        day: Number
+      }
+    ],
+
+    guides: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      }
+    ]
   },
   {
     toJSON: { virtuals: true },
     toObject: { virtuals: true }
   }
 );
+
+//EXAMPLE HOW TO EMBED USERS TO GUIDES PRE SAVE (INSTEAD OF ID'S)
+// TourSchema.pre('save', async function(next) {
+// OR: this.guides = await User.find({ _id: { $in: this.guides } })
+//   const guidesPromises = this.guides.map(async id => await User.findById(id));
+//   this.guides = await Promise.all(guidesPromises);
+// })
+//END TEST
+TourSchema.pre(/^find/, function(next) {
+  this.populate({
+    path: 'guides',
+    select: '-__v -passwordChangedAt -password'
+  })
+  next();
+});
 
 TourSchema.virtual('duerationWeeks').get(function() {
   return this.duration / 7;
