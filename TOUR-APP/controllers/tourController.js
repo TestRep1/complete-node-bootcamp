@@ -2,7 +2,28 @@ const { mongo, Mongoose } = require('mongoose');
 const Tour = require('../models/tourModel');
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
+const Factory = require('./controllerFactory');
 
+
+//{{URL}}tours/nearby/1000/center/34.128225,-118.204394/unit/mi
+exports.nearbyTours = catchAsync(async (req, res, next) => {
+  const {distance, latlng, unit} = req.params;
+  const[lat, lng] = latlng.split(',');
+
+  const radius = unit ==='mi'? distance/3963.2 : distance/6378.1;
+  const tours = await Tour.find({
+    startLocation: {
+      $geoWithin: { $centerSphere: [[lng, lat], radius]}
+    }
+  })
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      tours
+    }
+  })
+})
 // const fs = require('fs');
 
 // const tours = JSON.parse(
@@ -166,64 +187,10 @@ exports.getAllTours = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.getTour = catchAsync(async (req, res, next) => {
-  const tour = await Tour.findById(req.params.id)
-  
-  //MOVED TO QUERY MIDDLEWARE
-  // .populate({
-  //   path: 'guides',
-  //   select: '-__v -passwordChangedAt'
-  // });
+exports.getTour = Factory.getOne(Tour, {path: 'reviews'});
 
-  if (!tour) {
-    return next(new AppError('Tour not found!', 404));
-  }
-  
-  res.status(200).json({
-    status: 'success',
-    data: {
-      tour
-    }
-  });
-});
+exports.createTour = Factory.createOne(Tour);
 
-exports.createTour = catchAsync(async (req, res, next) => {
-  const newTour = await Tour.create(req.body);
-  res.status(201).json({
-    status: 'success',
-    data: {
-      tour: newTour
-    }
-  });
-});
+exports.updateTour = Factory.updateOne(Tour);
 
-exports.updateTour = catchAsync(async (req, res, next) => {
-  const updatedTour = await Tour.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-    runValidators: true
-  });
-
-  if (!updatedTour) {
-    return next(new AppError('Tour not found!', 404));
-  }
-
-  res.status(200).json({
-    status: 'success',
-    data: {
-      tour: updatedTour
-    }
-  });
-});
-
-exports.deleteTour = catchAsync(async (req, res, next) => {
-  const tour = await Tour.findByIdAndDelete(req.params.id);
-
-  if (!tour) {
-    return next(new AppError('Tour not found!', 404));
-  }
-
-  res.status(204).json({
-    status: 'success',
-    data: null
-  });
-});
+exports.deleteTour = Factory.deleteOne(Tour);

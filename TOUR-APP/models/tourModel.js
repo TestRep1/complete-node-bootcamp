@@ -34,7 +34,8 @@ const TourSchema = new mongoose.Schema(
       type: Number,
       default: 4.5,
       min: [1, 'Rating must be above 1.0'],
-      max: [5, 'Rating must be below 5.0']
+      max: [5, 'Rating must be below 5.0'],
+      set: val => Math.round(val * 10) / 10 // 4.666666, 46.6666, 47, 4.7
     },
     ratingsQuantity: {
       type: Number,
@@ -116,6 +117,17 @@ const TourSchema = new mongoose.Schema(
     toObject: { virtuals: true }
   }
 );
+TourSchema.index({startLocation: '2dsphere'});
+TourSchema.index({price: 1, ratingsAverage: -1}); //compound (MULTIPLE) index (PKR?)
+TourSchema.index({slug: 1});
+
+//POPULATE/CONNECT REVIEW MODEL AS A VIRTUAL FIELD:
+TourSchema.virtual('reviews', { //we populate only hen getting SINGLE REVIEW (NOT ALL) findById().populate('reviews)
+  ref: 'Review',
+  foreignField: 'tour', //what the name of tour id in REVIEW table
+  localField: '_id' // the id of TOUR model here (should be always _id)
+})
+
 
 //EXAMPLE HOW TO EMBED USERS TO GUIDES PRE SAVE (INSTEAD OF ID'S)
 // TourSchema.pre('save', async function(next) {
