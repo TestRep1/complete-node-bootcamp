@@ -6,30 +6,31 @@ const jwt = require('jsonwebtoken');
 const AppError = require('../utils/appError');
 const sendEmail = require('../utils/email');
 
-
 const createSendToken = (user, statusCode, res) => {
-    const token = signToken(user._id);
+  const token = signToken(user._id);
 
-    const cookieOptions = {
-        expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRED_IN * 24 * 60 * 60 * 1000),
-        httpOnly: true
+  const cookieOptions = {
+    expires: new Date(
+      Date.now() + process.env.JWT_COOKIE_EXPIRED_IN * 24 * 60 * 60 * 1000
+    ),
+    httpOnly: true
+  };
+  if (process.env.NODE_ENV === 'production') {
+    cookieOptions.secure = true; //only https
+  }
+
+  res.cookie('jwt', token, cookieOptions);
+
+  user.password = undefined; //remove password from output
+
+  res.status(statusCode).json({
+    status: 'success',
+    token,
+    data: {
+      user
     }
-    if(process.env.NODE_ENV ==='production') {
-        cookieOptions.secure = true; //only https
-    }
-
-    res.cookie('jwt', token, cookieOptions);
-
-    user.password = undefined; //remove password from output
-
-    res.status(statusCode).json({
-      status: 'success',
-      token,
-      data: {
-        user
-      }
-    });
-}
+  });
+};
 
 const signToken = id =>
   jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -69,13 +70,15 @@ exports.protect = catchAsync(async (req, res, next) => {
     req.headers.authorization.startsWith('Bearer ')
   ) {
     token = req.headers.authorization.split(' ')[1];
+  } else if(req.cookies.jwt) {
+    token = req.cookie.jwt;
   }
 
   if (!token || token === 'null') {
     next(new AppError('You need to login first to continue.'), 401);
   }
 
-  console.log({token});
+  console.log({ token });
 
   const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
 
@@ -173,16 +176,17 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   createSendToken(user, 200, res);
 });
 
-
 exports.updatePassword = catchAsync(async (req, res, next) => {
-    const user = await User.findById(req.user._id).select('+password');
-    if(! await user.isPasswordCorrect(req.body.currentPassword, user.password)) {
-        return next(new AppError('Current password is wrong!', 401));
-    }
+  const user = await User.findById(req.user._id).select('+password');
+  if (
+    !(await user.isPasswordCorrect(req.body.currentPassword, user.password))
+  ) {
+    return next(new AppError('Current password is wrong!', 401));
+  }
 
-    user.password = req.body.password;
-    user.confirmPassword = req.body.confirmPassword;
-    await user.save();
+  user.password = req.body.password;
+  user.confirmPassword = req.body.confirmPassword;
+  await user.save();
 
-    createSendToken(user, 200, res);
+  createSendToken(user, 200, res);
 });
